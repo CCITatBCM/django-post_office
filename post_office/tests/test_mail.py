@@ -15,7 +15,8 @@ from ..mail import (create, get_queued,
                     send, send_many, send_queued, _send_bulk)
 
 
-connection_counter = 0
+opened_connection_counter = 0
+closed_connection_counter = 0
 
 
 class ConnectionTestingBackend(mail.backends.base.BaseEmailBackend):
@@ -24,11 +25,15 @@ class ConnectionTestingBackend(mail.backends.base.BaseEmailBackend):
     '''
 
     def open(self):
-        global connection_counter
-        connection_counter += 1
+        global opened_connection_counter
+        opened_connection_counter += 1
 
     def send_messages(self, email_messages):
         pass
+
+    def close(self):
+        global closed_connection_counter
+        closed_connection_counter += 1
 
 
 class MailTest(TestCase):
@@ -92,8 +97,10 @@ class MailTest(TestCase):
         """
         Ensure _send_bulk() only opens connection once to send multiple emails.
         """
-        global connection_counter
-        self.assertEqual(connection_counter, 0)
+        global opened_connection_counter
+        global closed_connection_counter
+        self.assertEqual(opened_connection_counter, 0)
+        self.assertEqual(closed_connection_counter, 0)
         email = Email.objects.create(to=['to@example.com'],
                                      from_email='bob@example.com', subject='',
                                      message='', status=STATUS.queued, backend_alias='connection_tester')
@@ -101,8 +108,30 @@ class MailTest(TestCase):
                                        from_email='bob@example.com', subject='',
                                        message='', status=STATUS.queued,
                                        backend_alias='connection_tester')
-        _send_bulk([email, email_2])
-        self.assertEqual(connection_counter, 1)
+        email_3 = Email.objects.create(to=['to@example.com'],
+                                       from_email='bob@example.com', subject='',
+                                       message='', status=STATUS.queued,
+                                       backend_alias='connection_tester')
+        _send_bulk([email, email_2, email_3])
+        self.assertEqual(opened_connection_counter, 1)
+        self.assertEqual(closed_connection_counter, 1)
+
+    @override_settings(EMAIL_BACKEND='post_office.tests.test_mail.ConnectionTestingBackend')
+    def test_send_now_closes_connection(self):
+        """
+        Ensure send() with priority "now" only opens a connection once to send a single email.
+        """
+        global opened_connection_counter
+        global closed_connection_counter
+        opened_connection_counter = 0
+        closed_connection_counter = 0
+        self.assertEqual(opened_connection_counter, 0)
+        self.assertEqual(closed_connection_counter, 0)
+        send(recipients=['to@example.com'],
+             sender='from@example.com', message='',
+             subject='', backend='connection_tester', priority='now')
+        self.assertEqual(opened_connection_counter, 1)
+        self.assertEqual(closed_connection_counter, 1)
 
     def test_get_queued(self):
         """

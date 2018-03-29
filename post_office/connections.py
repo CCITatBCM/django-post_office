@@ -39,6 +39,7 @@ class ConnectionHandler(object):
     def close(self):
         for connection in self.all():
             connection.close()
+        self._connections.connections = {}
 
 
 connections = ConnectionHandler()

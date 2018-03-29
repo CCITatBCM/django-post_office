@@ -150,6 +150,7 @@ def send(recipients=None, sender=None, template=None, context=None, subject='',
 
     if priority == PRIORITY.now:
         email.dispatch(log_level=log_level)
+        connections.close()
 
     return email
 
