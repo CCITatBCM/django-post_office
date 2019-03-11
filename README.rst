@@ -368,10 +368,22 @@ Management Commands
 * ``cleanup_mail`` - delete all emails created before an X number of days
   (defaults to 90).
 
++---------------------------+--------------------------------------------------+
+| Argument                  | Description                                      |
++---------------------------+--------------------------------------------------+
+| ``--days`` or ``-d``      | Email older than this argument will be deleted.  |
+|                           | Defaults to 90                                   |
++---------------------------+--------------------------------------------------+
+| ``--delete-attachments`` | Flag to delete orphaned attachment records and    |
+|      or ``-da``           | files on disk. If flag is not set,               |
+|                           | on disk attachments files won't be deleted.      |
++---------------------------+--------------------------------------------------+
+
+
 You may want to set these up via cron to run regularly::
 
     * * * * * (cd $PROJECT; python manage.py send_queued_mail --processes=1 >> $PROJECT/cron_mail.log 2>&1)
-    0 1 * * * (cd $PROJECT; python manage.py cleanup_mail --days=30 >> $PROJECT/cron_mail_cleanup.log 2>&1)
+    0 1 * * * (cd $PROJECT; python manage.py cleanup_mail --days=30 --delete-attachments >> $PROJECT/cron_mail_cleanup.log 2>&1)
 
 Settings
 ========
@@ -588,10 +600,19 @@ or::
 Changelog
 =========
 
+Version 3.1.0 (2018-07-24)
+--------------------------
+* Improvements to attachments are handled. Thanks @SeiryuZ!
+* Added ``--delete-attachments`` flag to ``cleanup_mail`` management command. Thanks @Seiryuz!
+* I18n improvements. Thanks @vsevolod-skripnik and @delneg!
+* Django admin improvements. Thanks @kakulukia!
+
+
 Version 3.0.4
 -------------
 * Added compatibility with Django 2.0. Thanks @PreActionTech and @PetrDlouhy!
 * Added natural key support to `EmailTemplate` model. Thanks @maximlomakin!
+
 
 Version 3.0.2
 -------------
